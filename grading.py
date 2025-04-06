@@ -15,6 +15,7 @@
 "Common code for autograders"
 
 import cgi
+import html
 import time
 import sys
 import json
@@ -45,7 +46,7 @@ class Grades:
     self.mute = muteOutput
     self.prereqs = defaultdict(set)
 
-    #print 'Autograder transcript for %s' % self.project
+    #print('Autograder transcript for %s' % self.project)
     print('Starting on %d-%d at %d:%02d:%02d' % self.start)
 
   def addPrereq(self, question, prereq):
@@ -67,7 +68,7 @@ class Grades:
       incompleted = self.prereqs[q].difference(completedQuestions)
       if len(incompleted) > 0:
           prereq = incompleted.pop()
-          print(\
+          print(
 """*** NOTE: Make sure to complete Question %s before working on Question %s,
 *** because Question %s builds upon your answer for Question %s.
 """ % (prereq, q, q, prereq))
@@ -256,8 +257,8 @@ to follow your instructor's guidelines to receive credit on your project.
         checkOrX = checkOrX,
         points = self.points[q]
       )
-      # print "*** output for Question %s " % q[1]
-      # print output
+      # print("*** output for Question %s " % q[1])
+      # print(output)
       edxOutput.write(output)
     edxOutput.write("</div>")
     edxOutput.close()
@@ -291,14 +292,14 @@ to follow your instructor's guidelines to receive credit on your project.
         if self.mute: util.unmutePrint()
         print('*** ' + message)
         if self.mute: util.mutePrint()
-        message = cgi.escape(message)
+        message = html.escape(message)
     self.messages[self.currentQuestion].append(message)
 
   def addMessageToEmail(self, message):
     print("WARNING**** addMessageToEmail is deprecated %s" % message)
     for line in message.split('\n'):
       pass
-      #print '%%% ' + line + ' %%%'
+      #print('%%% ' + line + ' %%%')
       #self.messages[self.currentQuestion].append(line)
 
 
@@ -320,4 +321,3 @@ class Counter(dict):
     Returns the sum of counts for all keys.
     """
     return sum(self.values())
-
