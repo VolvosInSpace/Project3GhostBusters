@@ -239,7 +239,16 @@ class InferenceModule:
         """
         Set the belief state to a uniform prior belief over all positions.
         """
-        raise NotImplementedError
+        self.particles = []
+        legalPositions = self.legalPositions
+        numParticles = self.numParticles
+
+        # Distribute particles evenly across legal positions
+        while len(self.particles) < numParticles:
+            self.particles += legalPositions
+
+        # Trim the list to exactly numParticles
+        self.particles = self.particles[:numParticles]
 
     def observeUpdate(self, observation, gameState):
         """
@@ -258,7 +267,15 @@ class InferenceModule:
         Return the agent's current belief state, a distribution over ghost
         locations conditioned on all evidence so far.
         """
-        raise NotImplementedError
+        beliefDistribution = DiscreteDistribution()
+
+        # Count occurrences of each particle
+        for particle in self.particles:
+            beliefDistribution[particle] += 1
+
+        # Normalize the distribution
+        beliefDistribution.normalize()
+        return beliefDistribution
 
 
 class ExactInference(InferenceModule):
@@ -363,7 +380,21 @@ class ParticleFilter(InferenceModule):
         the DiscreteDistribution may be useful.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        pacPos = gameState.getPacmanPosition()
+        jailPos = self.getJailPosition()
+        weights = DiscreteDistribution()
+
+        # Calculate weights for each particle
+        for particle in self.particles:
+            weight = self.getObservationProb(observation, pacPos, particle, jailPos)
+            weights[particle] += weight
+
+        # Handle the special case where all particles have zero weight
+        if weights.total() == 0:
+            self.initializeUniformly(gameState)
+        else:
+            # Resample particles based on the weight distribution
+            self.particles = [weights.sample() for _ in range(self.numParticles)]
 
     def elapseTime(self, gameState):
         """
