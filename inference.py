@@ -365,7 +365,20 @@ class ParticleFilter(InferenceModule):
         """
         self.particles = []
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # Defind the legal positions
+        legalPositioons = self.legalPositions
+
+        # Define the number of particles
+        numParticles = self.numParticles
+
+        # Now we need to spread them evenly across the legal positions
+        while len(self.particles) < numParticles:
+            self.particles += legalPositioons
+
+        # Because we used a list, we can remove any extra particles
+        # this is easy and done in the correct order
+        self.particles = self.particles[:numParticles]
+
 
     def observeUpdate(self, observation, gameState):
         """
@@ -396,13 +409,24 @@ class ParticleFilter(InferenceModule):
             # Resample particles based on the weight distribution
             self.particles = [weights.sample() for _ in range(self.numParticles)]
 
+
     def elapseTime(self, gameState):
         """
         Sample each particle's next state based on its current state and the
         gameState.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # Create a list of new particles
+        newParticles = []
+
+        # Loop through each old particle,
+        # sample a new pos based on the position distribution
+        for oldParticle in self.particles:
+            newPosDist = self.getPositionDistribution(gameState, oldParticle)
+            newParticle = newPosDist.sample()  # Sample a new position for the ghost
+            newParticles.append(newParticle)
+        self.particles = newParticles  # Update the list of particles
+
 
     def getBeliefDistribution(self):
         """
@@ -413,8 +437,16 @@ class ParticleFilter(InferenceModule):
         This function should return a normalized distribution.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        beliefDistribution = DiscreteDistribution()
 
+        # count the occurrences of each particle to define our belief
+        for particle in self.particles:
+            beliefDistribution[particle] += 1
+
+        # Now we need to noormalize the distribution
+        # this converts it to values between 0 and 1
+        beliefDistribution.normalize()
+        return beliefDistribution
 
 class JointParticleFilter(ParticleFilter):
     """
