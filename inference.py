@@ -254,6 +254,7 @@ class InferenceModule:
         """
         Update beliefs based on the given distance observation and gameState.
         """
+        ############################################################################
         raise NotImplementedError
 
     def elapseTime(self, gameState):
@@ -365,7 +366,20 @@ class ParticleFilter(InferenceModule):
         """
         self.particles = []
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # Defind the legal positions
+        legalPositioons = self.legalPositions
+
+        # Define the number of particles
+        numParticles = self.numParticles
+
+        # Now we need to spread them evenly across the legal positions
+        while len(self.particles) < numParticles:
+            self.particles += legalPositioons
+
+        # Because we used a list, we can remove any extra particles
+        # this is easy and done in the correct order
+        self.particles = self.particles[:numParticles]
+
 
     def observeUpdate(self, observation, gameState):
         """
@@ -396,13 +410,24 @@ class ParticleFilter(InferenceModule):
             # Resample particles based on the weight distribution
             self.particles = [weights.sample() for _ in range(self.numParticles)]
 
+
     def elapseTime(self, gameState):
         """
         Sample each particle's next state based on its current state and the
         gameState.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        # Create a list of new particles
+        newParticles = []
+
+        # Loop through each old particle,
+        # sample a new pos based on the position distribution
+        for oldParticle in self.particles:
+            newPosDist = self.getPositionDistribution(gameState, oldParticle)
+            newParticle = newPosDist.sample()  # Sample a new position for the ghost
+            newParticles.append(newParticle)
+        self.particles = newParticles  # Update the list of particles
+
 
     def getBeliefDistribution(self):
         """
@@ -413,8 +438,16 @@ class ParticleFilter(InferenceModule):
         This function should return a normalized distribution.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        beliefDistribution = DiscreteDistribution()
 
+        # count the occurrences of each particle to define our belief
+        for particle in self.particles:
+            beliefDistribution[particle] += 1
+
+        # Now we need to noormalize the distribution
+        # this converts it to values between 0 and 1
+        beliefDistribution.normalize()
+        return beliefDistribution
 
 class JointParticleFilter(ParticleFilter):
     """
@@ -441,7 +474,19 @@ class JointParticleFilter(ParticleFilter):
         """
         self.particles = []
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        #######################################################
+
+        # First we need to get the number of ghosts (-1 to account for pacman)
+        numGhosts = gameState.getNumAgents() - 1
+        
+        # using itertools generate all the combos of ghost positions
+        possiblePositions = list(itertools.product(self.legalPositions, repeat=numGhosts))
+
+        # now we should shuffle the list of possible positions to get our uniform distribution
+        random.shuffle(possiblePositions)
+
+        # new we set the particles to the shuffled list of possible positions
+        self.particles = possiblePositions[:self.numParticles]
 
     def addGhostAgent(self, agent):
         """
@@ -474,7 +519,26 @@ class JointParticleFilter(ParticleFilter):
         the DiscreteDistribution may be useful.
         """
         "*** YOUR CODE HERE ***"
-        raiseNotDefined()
+        ############################################################################
+
+        # Create a descrete distribution
+        weights = DiscreteDistribution()
+        pacmanPosition = gameState.getPacmanPosition()
+
+        # iterate through the particles
+        for particle in self.particles:
+            weight = 1.0
+            for i in range(self.numGhosts):
+                ghostPosition = particle[i]
+                jailPosition = self.getJailPosition(i)
+                noisyDistance = observation[i]
+                weight *= self.getObservationProb(noisyDistance, pacmanPosition, ghostPosition, jailPosition)
+            weights[particle] += weight
+        # handel 0 weights
+        if weights.total() == 0:
+            self.initializeUniformly(gameState)
+        else:
+            self.particles = [weights.sample() for _ in range(self.numParticles)]
 
     def elapseTime(self, gameState):
         """
@@ -487,7 +551,16 @@ class JointParticleFilter(ParticleFilter):
 
             # now loop through and update each entry in newParticle...
             "*** YOUR CODE HERE ***"
-            raiseNotDefined()
+            ##################################################################################
+            # for each particle each ghost shoud draw a new position based on the old positions of the ghosts
+
+            # iterate through the ghosts
+            for i in range(self.numGhosts):
+                # given the list of previous positions of all ghosts (prevGhostPositions), 
+                # you should obtain the distribution over its new possible positions
+                prevGhostPositions = oldParticle
+                newPosDist = self.getPositionDistribution(gameState, prevGhostPositions, i, self.ghostAgents[i])
+                newParticle[i] = newPosDist.sample()
 
             """*** END YOUR CODE HERE ***"""
             newParticles.append(tuple(newParticle))
