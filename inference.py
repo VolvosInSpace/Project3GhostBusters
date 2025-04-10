@@ -75,9 +75,8 @@ class DiscreteDistribution(dict):
         {}
         """
         "*** YOUR CODE HERE ***"
-        total = self.total()
-        if total:            
-            for key in self.keys():
+        if (total := self.total()):
+            for key in self:
                 self[key] /= total
 
     def sample(self):
@@ -312,13 +311,11 @@ class ExactInference(InferenceModule):
         "*** YOUR CODE HERE ***"
         pacPos = gameState.getPacmanPosition()
         jailPos = self.getJailPosition()
-        beliefs = self.beliefs
         allGhostPositions = self.allPositions
 
         for pos in allGhostPositions:
             probObsver = self.getObservationProb(observation, pacPos, pos, jailPos)
-            priorBeliefs = beliefs[pos]
-            beliefs[pos] = probObsver * priorBeliefs
+            self.beliefs[pos] *= probObsver
         self.beliefs.normalize()
 
     def elapseTime(self, gameState):
@@ -331,11 +328,10 @@ class ExactInference(InferenceModule):
         current position is known.
         """
         "*** YOUR CODE HERE ***"
-        allGhostPositions = self.allPositions
         beliefs = self.beliefs
 
         newDistro = DiscreteDistribution()
-        for oldPos in allGhostPositions:
+        for oldPos in self.allPositions:
             newPosDist = self.getPositionDistribution(gameState, oldPos) # gets the distribution over new positions for the ghost, given its previous position
             for newPos, probability in newPosDist.items():
                 newDistro[newPos] += beliefs[oldPos] * probability
